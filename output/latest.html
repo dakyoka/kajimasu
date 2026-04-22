@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>今日の家事ダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:'#0A0F1C', night:'#0F172A', plate:'#131C2E',
+            card:'#172238', card2:'#1E2A44', line:'#28344F', line2:'#334466',
+            ink:'#E6EDF7', muted:'#8FA0BE', dim:'#5F7090',
+            cyan1:'#22D3EE', cyan2:'#67E8F9', cyanbg:'#0E2A35',
+            sky1:'#38BDF8',  sky2:'#7DD3FC',  skybg:'#0E2539',
+            indi1:'#818CF8', indi2:'#A5B4FC', indibg:'#1A1F3B',
+            teal1:'#5EEAD4', tealbg:'#0D2C2B',
+          },
+          fontFamily: {
+            sans: ['"Noto Sans JP"','"Hiragino Kaku Gothic ProN"','"Yu Gothic"','sans-serif'],
+            mono: ['"JetBrains Mono"','ui-monospace','monospace'],
+          },
+          letterSpacing: { tightish:'-0.01em' }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-base font-sans text-ink antialiased">
+  <main>
+    <div data-capture-root
+         class="mx-auto my-8 w-[1080px] relative overflow-hidden rounded-[40px] shadow-2xl shadow-black/60"
+         style="background:
+           radial-gradient(circle at 12% 8%, rgba(34,211,238,0.12) 0%, transparent 42%),
+           radial-gradient(circle at 95% 95%, rgba(129,140,248,0.14) 0%, transparent 45%),
+           linear-gradient(135deg, #0B1220 0%, #0F172A 55%, #111B33 100%);">
+      <div aria-hidden="true" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan1 via-sky1 to-indi1"></div>
+      <div aria-hidden="true" class="absolute inset-0 opacity-[0.04]"
+           style="background-image: linear-gradient(to right, #8FA0BE 1px, transparent 1px), linear-gradient(to bottom, #8FA0BE 1px, transparent 1px); background-size: 48px 48px;"></div>
+
+      <div class="relative flex flex-col px-16 pt-10 pb-10">
+
+        <!-- ヘッダー -->
+        <header class="flex items-start justify-between mb-6 pb-6 border-b border-line">
+          <div>
+            <h1 class="text-4xl font-black text-ink leading-tight tracking-tightish">
+              おはようございます。
+            </h1>
+            <p class="mt-2.5 text-lg font-medium text-muted leading-relaxed">
+              今日もムリせず、ひとつずつ。いい一日にしましょう。
+            </p>
+          </div>
+          <div class="flex-shrink-0">
+            <div class="inline-flex flex-col items-end gap-1.5 px-5 py-3.5 rounded-2xl bg-plate border border-line">
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-5xl font-black text-ink leading-none">21</span>
+                <span class="text-xl font-bold text-muted">APR</span>
+              </div>
+              <span class="text-sm font-bold text-muted">4月21日 水曜日</span>
+            </div>
+          </div>
+        </header>
+
+        <!-- ヒーロー: 本日の3手 -->
+        <section class="mb-7">
+          <div class="flex items-center gap-2 mb-3">
+            <i aria-hidden="true" data-lucide="target" class="w-4 h-4 text-ink/60"></i>
+            <span class="text-sm font-bold text-muted tracking-wide">本日の3手</span>
+          </div>
+          <div class="flex items-center gap-3">
+              <span class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-cyanbg border border-cyan1/50">
+                <i aria-hidden="true" data-lucide="washing-machine" class="w-5 h-5 text-cyan1"></i>
+                <span class="text-xl font-black text-ink">洗濯機</span>
+              </span>
+              <i aria-hidden="true" data-lucide="chevron-right" class="w-5 h-5 text-dim flex-shrink-0"></i>
+              <span class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-skybg border border-sky1/50">
+                <i aria-hidden="true" data-lucide="shirt" class="w-5 h-5 text-sky1"></i>
+                <span class="text-xl font-black text-ink">洗濯畳み</span>
+              </span>
+              <i aria-hidden="true" data-lucide="chevron-right" class="w-5 h-5 text-dim flex-shrink-0"></i>
+              <span class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indibg border border-indi1/50">
+                <i aria-hidden="true" data-lucide="utensils" class="w-5 h-5 text-indi1"></i>
+                <span class="text-xl font-black text-ink">食器洗い</span>
+              </span>
+            <span class="ml-auto inline-flex items-baseline gap-1 px-4 py-2.5 rounded-xl bg-plate border border-line">
+              <span class="text-xs font-bold text-muted tracking-widest">合計</span>
+              <span class="font-mono text-3xl font-black text-ink leading-none">53</span>
+              <span class="text-sm font-bold text-muted">分</span>
+            </span>
+          </div>
+        </section>
+
+        <!-- TOP3 詳細カード -->
+        <section class="flex flex-col gap-4">
+          <article class="flex items-stretch gap-5 p-6 rounded-2xl bg-card border border-line">
+            <div class="flex-shrink-0 w-14 flex items-center justify-center border-r border-line pr-4">
+              <span class="text-6xl font-black text-cyan1 leading-none">1</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-cyanbg border border-cyan1/30 flex items-center justify-center">
+                  <i aria-hidden="true" data-lucide="washing-machine" class="w-5 h-5 text-cyan1"></i>
+                </div>
+                <h3 class="text-3xl font-black text-ink tracking-tightish">洗濯機</h3>
+              </div>
+              <div class="flex items-center gap-2 mb-2 pl-[3.25rem]">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-plate border border-line text-xs font-bold text-ink/80">
+                  <i aria-hidden="true" data-lucide="history" class="w-3 h-3"></i> 初回
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-plate border border-line text-xs font-bold text-ink/80">
+                  推奨 1日サイクル
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyanbg border border-cyan1/40 text-xs font-bold text-cyan1">
+                  未記録
+                </span>
+              </div>
+              <p class="text-base font-medium text-ink/85 leading-relaxed pl-[3.25rem]">まだ記録がありません。推奨サイクルは<span class="font-bold text-cyan1">1日</span>、この機会にスタート。</p>
+            </div>
+            <div class="flex-shrink-0 w-20 flex flex-col items-center justify-center gap-1 border-l border-line pl-4">
+              <span class="text-xs font-bold text-muted tracking-widest">所要</span>
+              <span class="font-mono text-3xl font-black text-ink leading-none">3<span class="text-sm font-bold text-muted ml-0.5">分</span></span>
+            </div>
+          </article>
+          <article class="flex items-stretch gap-5 p-6 rounded-2xl bg-card border border-line">
+            <div class="flex-shrink-0 w-14 flex items-center justify-center border-r border-line pr-4">
+              <span class="text-6xl font-black text-sky1 leading-none">2</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-skybg border border-sky1/30 flex items-center justify-center">
+                  <i aria-hidden="true" data-lucide="shirt" class="w-5 h-5 text-sky1"></i>
+                </div>
+                <h3 class="text-3xl font-black text-ink tracking-tightish">洗濯物取り込み&amp;畳む</h3>
+              </div>
+              <div class="flex items-center gap-2 mb-2 pl-[3.25rem]">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-plate border border-line text-xs font-bold text-ink/80">
+                  <i aria-hidden="true" data-lucide="history" class="w-3 h-3"></i> 初回
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-plate border border-line text-xs font-bold text-ink/80">
+                  推奨 1日サイクル
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-skybg border border-sky1/40 text-xs font-bold text-sky1">
+                  未記録
+                </span>
+              </div>
+              <p class="text-base font-medium text-ink/85 leading-relaxed pl-[3.25rem]">まだ記録がありません。推奨サイクルは<span class="font-bold text-sky1">1日</span>、この機会にスタート。</p>
+            </div>
+            <div class="flex-shrink-0 w-20 flex flex-col items-center justify-center gap-1 border-l border-line pl-4">
+              <span class="text-xs font-bold text-muted tracking-widest">所要</span>
+              <span class="font-mono text-3xl font-black text-ink leading-none">20<span class="text-sm font-bold text-muted ml-0.5">分</span></span>
+            </div>
+          </article>
+          <article class="flex items-stretch gap-5 p-6 rounded-2xl bg-card border border-line">
+            <div class="flex-shrink-0 w-14 flex items-center justify-center border-r border-line pr-4">
+              <span class="text-6xl font-black text-indi1 leading-none">3</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-indibg border border-indi1/30 flex items-center justify-center">
+                  <i aria-hidden="true" data-lucide="utensils" class="w-5 h-5 text-indi1"></i>
+                </div>
+                <h3 class="text-3xl font-black text-ink tracking-tightish">食器洗い</h3>
+              </div>
+              <div class="flex items-center gap-2 mb-2 pl-[3.25rem]">
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-plate border border-line text-xs font-bold text-ink/80">
+                  <i aria-hidden="true" data-lucide="history" class="w-3 h-3"></i> 初回
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-plate border border-line text-xs font-bold text-ink/80">
+                  推奨 1日サイクル
+                </span>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indibg border border-indi1/40 text-xs font-bold text-indi1">
+                  未記録
+                </span>
+              </div>
+              <p class="text-base font-medium text-ink/85 leading-relaxed pl-[3.25rem]">まだ記録がありません。推奨サイクルは<span class="font-bold text-indi1">1日</span>、この機会にスタート。</p>
+            </div>
+            <div class="flex-shrink-0 w-20 flex flex-col items-center justify-center gap-1 border-l border-line pl-4">
+              <span class="text-xs font-bold text-muted tracking-widest">所要</span>
+              <span class="font-mono text-3xl font-black text-ink leading-none">30<span class="text-sm font-bold text-muted ml-0.5">分</span></span>
+            </div>
+          </article>
+        </section>
+
+        <!-- ボーナス -->
+        <section class="pt-5">
+          <div class="rounded-2xl bg-plate border border-line2 p-5">
+            <div class="flex items-center gap-2.5 mb-4">
+              <i aria-hidden="true" data-lucide="plus" class="w-5 h-5 text-teal1"></i>
+              <span class="text-lg font-black text-ink">余裕があればやってみよう</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-card2 border border-line2">
+                <div class="flex-shrink-0 w-11 h-11 rounded-lg bg-tealbg border border-teal1/40 flex items-center justify-center">
+                  <i aria-hidden="true" data-lucide="wind" class="w-5 h-5 text-teal1"></i>
+                </div>
+                <span class="text-lg font-black text-ink leading-snug">リビングの掃除機がけ</span>
+              </div>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-card2 border border-line2">
+                <div class="flex-shrink-0 w-11 h-11 rounded-lg bg-tealbg border border-teal1/40 flex items-center justify-center">
+                  <i aria-hidden="true" data-lucide="toilet" class="w-5 h-5 text-teal1"></i>
+                </div>
+                <span class="text-lg font-black text-ink leading-snug">トイレ掃除</span>
+              </div>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-card2 border border-line2">
+                <div class="flex-shrink-0 w-11 h-11 rounded-lg bg-tealbg border border-teal1/40 flex items-center justify-center">
+                  <i aria-hidden="true" data-lucide="layout-grid" class="w-5 h-5 text-teal1"></i>
+                </div>
+                <span class="text-lg font-black text-ink leading-snug">机周りの整理</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- フッター -->
+          <div class="mt-5 flex items-center justify-between pt-4 border-t border-line">
+            <div class="flex items-center gap-2 text-muted">
+              <i aria-hidden="true" data-lucide="notebook-pen" class="w-4 h-4"></i>
+              <span class="text-sm font-medium">やったらかじマスに送信</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1.5" aria-hidden="true">
+                <span class="w-2 h-2 rounded-full bg-cyan1"></span>
+                <span class="w-2 h-2 rounded-full bg-sky1"></span>
+                <span class="w-2 h-2 rounded-full bg-indi1"></span>
+              </div>
+              <span class="text-sm font-bold text-ink">完璧じゃなくて、大丈夫。</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@0.474.0/dist/umd/lucide.min.js"></script>
+  <script>
+    window.__iconsReady = false;
+    lucide.createIcons();
+    window.__iconsReady = true;
+  </script>
+</body>
+</html>
