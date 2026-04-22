@@ -1,0 +1,54 @@
+name: Morning Chores
+
+on:
+  schedule:
+    - cron: '0 22 * * *'  # UTC 22:00 = JST 07:00
+  workflow_dispatch:       # 手動実行用ボタン
+
+jobs:
+  morning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Render dashboard
+        env:
+          GAS_API_URL: ${{ secrets.GAS_API_URL }}
+        run: npm run render
+
+      - name: Commit images
+        id: commit
+        run: |
+          git config user.name 'kajimasu-bot'
+          git config user.email 'bot@users.noreply.github.com'
+          git add -A output/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "sha=$GITHUB_SHA" >> $GITHUB_OUTPUT
+          else
+            git commit -m "chore: dashboard $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+            echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for CDN
+        run: sleep 10
+
+      - name: Send to LINE
+        env:
+          LINE_TOKEN: ${{ secrets.LINE_TOKEN }}
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: npm run send
