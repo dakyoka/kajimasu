@@ -1,0 +1,14 @@
+{
+  "name": "kajimasu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "node scripts/render.js",
+    "send": "node scripts/send.js"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.8",
+    "puppeteer": "^23.11.0"
+  }
+}
