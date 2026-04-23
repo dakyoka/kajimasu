@@ -7,7 +7,7 @@ const OUTPUT_DIR = 'output';
 const TEMPLATE_PATH = 'template.html';
 const GAS_API_URL = process.env.GAS_API_URL;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 if (!GAS_API_URL) {
   console.error('Missing GAS_API_URL env');
