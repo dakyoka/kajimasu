@@ -6,6 +6,8 @@ import Handlebars from 'handlebars';
 const OUTPUT_DIR = 'output';
 const TEMPLATE_PATH = 'template.html';
 const GAS_API_URL = process.env.GAS_API_URL;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 if (!GAS_API_URL) {
   console.error('Missing GAS_API_URL env');
@@ -21,13 +23,33 @@ async function main() {
 
   const today = new Date(data.today + 'T00:00:00+09:00');
   console.log(`Today: ${data.today} (${data.weekday})`);
-  console.log(`Masters: ${data.masters.length}, Logs: ${data.logs.length}`);
+  console.log(`Masters: ${data.masters.length}, Logs: ${data.logs.length}, Context: ${(data.context || '').length}文字`);
 
   const scored = computeScores(data.masters, data.logs, today);
-  const top3 = scored.slice(0, 3);
-  const bonus = scored.slice(3, 6);
 
-  console.log('TOP3:', top3.map(c => `${c.name}(${c.daysAgo}日前)`).join(', '));
+  let aiResult = null;
+  if (GEMINI_API_KEY) {
+    try {
+      aiResult = await runAIPipeline(data.context || '', data.today, data.weekday, scored);
+    } catch (err) {
+      console.warn('⚠️ AI pipeline failed, falling back to rule-based');
+      console.warn(err.message);
+    }
+  } else {
+    console.log('GEMINI_API_KEY not set, using rule-based');
+  }
+
+  const top3 = pickFromScored(aiResult?.top3, scored);
+  const bonus = pickFromScored(
+    aiResult?.bonus?.map(b => ({ ...b, reason: null })),
+    scored,
+    top3
+  );
+
+  fillShortage(top3, scored, []);
+  fillShortage(bonus, scored, top3);
+
+  console.log('TOP3:', top3.map(c => c.name).join(', '));
   console.log('BONUS:', bonus.map(c => c.name).join(', '));
 
   const view = buildView(data, top3, bonus);
@@ -46,14 +68,12 @@ async function main() {
   });
 
   try {
-    // 高解像度 PNG (LINE original)
     await renderImage(browser, html, path.join(OUTPUT_DIR, 'latest.png'), {
       viewport: { width: 1280, height: 1500, deviceScaleFactor: 2 },
       type: 'png',
     });
     console.log('Original PNG saved');
 
-    // 低解像度 JPEG (LINE preview, < 1MB)
     await renderImage(browser, html, path.join(OUTPUT_DIR, 'latest-preview.jpg'), {
       viewport: { width: 640, height: 800, deviceScaleFactor: 1 },
       type: 'jpeg',
@@ -67,34 +87,220 @@ async function main() {
   console.log('Done!');
 }
 
-async function renderImage(browser, html, outPath, opts) {
-  const page = await browser.newPage();
-  await page.setViewport(opts.viewport);
-  await page.setContent(html, { waitUntil: 'networkidle0' });
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForFunction(
-    () => document.querySelectorAll('i[data-lucide]').length === 0 && window.__iconsReady === true,
-    { timeout: 15000 }
-  );
-  await new Promise(r => setTimeout(r, 500));
+// ========== AI パイプライン ==========
 
-  const rect = await page.evaluate(() => {
-    const el = document.querySelector('[data-capture-root]');
-    const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, w: r.width, h: r.height };
-  });
+async function runAIPipeline(context, today, weekday, scored) {
+  console.log('[AI Stage 1] Main AI proposing...');
+  const draft = await stage1Propose(context, today, weekday, scored);
+  console.log('[AI Stage 1] Draft:', summarize(draft));
 
-  const screenshotOpts = {
-    path: outPath,
-    clip: { x: rect.x, y: rect.y, width: rect.w, height: rect.h },
-  };
-  if (opts.type === 'jpeg') {
-    screenshotOpts.type = 'jpeg';
-    screenshotOpts.quality = opts.quality || 75;
-  }
-  await page.screenshot(screenshotOpts);
-  await page.close();
+  console.log('[AI Stage 2] Reviewers reviewing in parallel...');
+  const [expertReview, tiredReview] = await Promise.all([
+    stage2ReviewExpert(context, today, weekday, scored, draft),
+    stage2ReviewTired(context, today, weekday, scored, draft),
+  ]);
+  console.log('[AI Stage 2] Expert:', expertReview.slice(0, 80).replace(/\n/g, ' '));
+  console.log('[AI Stage 2] Tired :', tiredReview.slice(0, 80).replace(/\n/g, ' '));
+
+  console.log('[AI Stage 3] Main AI finalizing...');
+  const final = await stage3Finalize(context, today, weekday, scored, draft, expertReview, tiredReview);
+  console.log('[AI Stage 3] Final:', summarize(final));
+
+  return final;
 }
+
+async function stage1Propose(context, today, weekday, scored) {
+  const prompt = `あなたは家庭の家事アシスタントです。世帯情報と家事状況を見て、今日のTOP3と余裕があれば追加でやる家事ボーナス3つを決めてください。
+
+# 世帯情報
+${context || '（コンテキスト未設定）'}
+
+# 現在日時
+${today}（${weekday}曜日）
+
+# 家事一覧
+${formatChoresForPrompt(scored)}
+
+# 方針
+- 推奨頻度からの超過を重視
+- 曜日の特性も考慮
+- 同ジャンル偏らせすぎない
+- 理由文は50字前後、重要キーワードを **太字** で囲む
+
+# 出力はJSONのみ
+{
+  "top3": [
+    {"name": "家事名", "reason": "理由文（**強調**含む）"},
+    {"name": "家事名", "reason": "..."},
+    {"name": "家事名", "reason": "..."}
+  ],
+  "bonus": [{"name": "家事名"}, {"name": "家事名"}, {"name": "家事名"}]
+}`;
+  const text = await callGemini(prompt, { jsonOutput: true, temperature: 0.7 });
+  return parseJsonSafe(text);
+}
+
+async function stage2ReviewExpert(context, today, weekday, scored, draft) {
+  const prompt = `あなたは整理収納アドバイザーの資格を持つ家事のプロです。提案ドラフトにプロ視点のレビューコメントを書いてください。書き換え権限はありません。
+
+# 世帯情報
+${context}
+
+# 今日
+${today}（${weekday}曜日）
+
+# 家事一覧
+${formatChoresForPrompt(scored)}
+
+# 提案ドラフト
+${JSON.stringify(draft, null, 2)}
+
+# レビュー観点
+- 衛生面での見落とし
+- 家事動線・効率
+- 曜日特性（ゴミ、来客等）
+- 理由文の説得力
+
+# 出力（プレーンテキスト、300字以内）
+「専門家として気になる点：」から始めて、1〜3点の具体的コメント。
+suggest調で（「〜の検討を」など）。`;
+  return await callGemini(prompt, { temperature: 0.6 });
+}
+
+async function stage2ReviewTired(context, today, weekday, scored, draft) {
+  const prompt = `あなたは仕事と生活で疲れている、その世帯の住人です。提案ドラフトに「本当に今日できるか？」の現実チェックをコメントしてください。書き換え権限はありません。
+
+# 世帯情報
+${context}
+
+# 今日
+${today}（${weekday}曜日）
+
+# 提案ドラフト
+${JSON.stringify(draft, null, 2)}
+
+# レビュー観点
+- 合計所要時間の負担感
+- 曜日の疲労度（金曜夜、土曜来客前等）
+- 朝/夜の生活リズム
+- 体調配慮（腰痛、手荒れ等）
+- 「今日じゃなくていい」感のあるものが紛れ込んでないか
+
+# 出力（プレーンテキスト、300字以内）
+「疲れた自分として気になる点：」から始めて、1〜3点の具体的コメント。
+suggest調で（「〜は軽めに済ませる手も」など）。`;
+  return await callGemini(prompt, { temperature: 0.7 });
+}
+
+async function stage3Finalize(context, today, weekday, scored, draft, expertReview, tiredReview) {
+  const prompt = `あなたは家庭の家事アシスタントです。ドラフト提案に2名のレビューが入りました。両方を踏まえて最終版を決定してください（決裁権はあなた）。
+
+# 世帯情報
+${context}
+
+# 今日
+${today}（${weekday}曜日）
+
+# 家事一覧
+${formatChoresForPrompt(scored)}
+
+# ドラフト
+${JSON.stringify(draft, null, 2)}
+
+# 🧹 専門家のレビュー
+${expertReview}
+
+# 😮‍💨 疲れた自分のレビュー
+${tiredReview}
+
+# 指示
+- 両レビューを踏まえて必要なら入れ替え/理由文調整
+- 指摘を全部飲む必要はなく、あなたが判断
+- 理由文はポジティブで具体的、50字前後、重要キーワードを **太字** で
+- 家事名は必ず「家事一覧」の中のものと完全一致させる
+
+# 出力はJSONのみ
+{
+  "top3": [
+    {"name": "家事名", "reason": "..."},
+    {"name": "家事名", "reason": "..."},
+    {"name": "家事名", "reason": "..."}
+  ],
+  "bonus": [{"name": "家事名"}, {"name": "家事名"}, {"name": "家事名"}]
+}`;
+  const text = await callGemini(prompt, { jsonOutput: true, temperature: 0.7 });
+  return parseJsonSafe(text);
+}
+
+async function callGemini(prompt, opts = {}) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: opts.temperature ?? 0.7,
+      ...(opts.jsonOutput && { responseMimeType: 'application/json' }),
+    },
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Gemini returned empty response');
+  return text;
+}
+
+function parseJsonSafe(text) {
+  try { return JSON.parse(text); } catch {}
+  const m = text.match(/\{[\s\S]*\}/);
+  if (m) return JSON.parse(m[0]);
+  throw new Error('Non-JSON response: ' + text.slice(0, 200));
+}
+
+function formatChoresForPrompt(scored) {
+  return scored.map(c => {
+    const last = c.daysAgo >= 999 ? '未記録' : `${c.daysAgo}日前`;
+    const freq = c.weeklyFreq ? `週${c.weeklyFreq}回` : '';
+    const min = c.minutes ? `${c.minutes}分` : '';
+    const over = c.daysAgo >= 999
+      ? ''
+      : c.overDays > 0 ? `/+${c.overDays}日超過`
+      : c.overDays === 0 ? '/ちょうど'
+      : c.overDays === -1 ? '/明日目安' : '';
+    return `- ${c.name}: ${freq}/${min}/前回${last}${over}`;
+  }).join('\n');
+}
+
+function pickFromScored(aiList, scored, exclude = []) {
+  if (!aiList || !Array.isArray(aiList)) return [];
+  const excludeNames = new Set(exclude.map(c => c.name));
+  return aiList.map(item => {
+    const name = String(item.name || '').trim();
+    const full = scored.find(c => c.name === name)
+      || scored.find(c => c.name.includes(name) || name.includes(c.name));
+    if (!full) return null;
+    if (excludeNames.has(full.name)) return null;
+    return { ...full, aiReason: item.reason || null };
+  }).filter(Boolean);
+}
+
+function fillShortage(list, scored, exclude) {
+  const needed = 3 - list.length;
+  if (needed <= 0) return;
+  const existing = new Set([...list, ...exclude].map(c => c.name));
+  const fill = scored.filter(c => !existing.has(c.name)).slice(0, needed);
+  list.push(...fill);
+}
+
+function summarize(obj) {
+  return (obj?.top3 || []).map(t => t.name).join(',') +
+    ' / ' + (obj?.bonus || []).map(b => b.name).join(',');
+}
+
+// ========== スコア計算（フォールバック用） ==========
 
 function computeScores(masters, logs, today) {
   return masters
@@ -113,6 +319,8 @@ function computeScores(masters, logs, today) {
     .sort((a, b) => b.score - a.score);
 }
 
+// ========== ビュー構築 ==========
+
 function buildView(data, top3, bonus) {
   const dateObj = new Date(data.today + 'T00:00:00+09:00');
   const monthsEn = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -125,6 +333,7 @@ function buildView(data, top3, bonus) {
     { color: 'sky1',  bg: 'skybg'  },
     { color: 'indi1', bg: 'indibg' },
   ];
+
   const top3View = top3.map((c, i) => {
     const p = palettes[i];
     return {
@@ -140,7 +349,7 @@ function buildView(data, top3, bonus) {
       minutes: c.minutes || 0,
     };
   });
-  
+
   const heroChips = top3.map((c, i) => ({
     name: shortenName(c.name),
     color: palettes[i].color,
@@ -173,6 +382,9 @@ function buildCycleStatus(chore) {
 }
 
 function buildReason(chore, color) {
+  if (chore.aiReason) {
+    return formatAiReason(chore.aiReason, color);
+  }
   const freqDisplay = chore.weeklyFreq
     ? `週${formatFreq(chore.weeklyFreq)}回`
     : `${chore.cycleDays}日サイクル`;
@@ -190,6 +402,19 @@ function buildReason(chore, color) {
     return `<span class="font-bold text-${color}">明日が目安</span>。先取りで今日やれば、明日以降に余裕が生まれる。`;
   }
   return `前回から${chore.daysAgo}日。<span class="font-bold text-${color}">${chore.minutes}分で済む</span>ので、手が空いた時に。`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatAiReason(aiText, color) {
+  const safe = escapeHtml(aiText);
+  return safe.replace(/\*\*(.+?)\*\*/g, `<span class="font-bold text-${color}">$1</span>`);
 }
 
 function formatFreq(freq) {
@@ -227,6 +452,37 @@ function getIcon(name) {
   ];
   for (const m of map) if (m.pattern.test(name)) return m.icon;
   return 'sparkles';
+}
+
+// ========== Puppeteer ==========
+
+async function renderImage(browser, html, outPath, opts) {
+  const page = await browser.newPage();
+  await page.setViewport(opts.viewport);
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(
+    () => document.querySelectorAll('i[data-lucide]').length === 0 && window.__iconsReady === true,
+    { timeout: 15000 }
+  );
+  await new Promise(r => setTimeout(r, 500));
+
+  const rect = await page.evaluate(() => {
+    const el = document.querySelector('[data-capture-root]');
+    const r = el.getBoundingClientRect();
+    return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+
+  const screenshotOpts = {
+    path: outPath,
+    clip: { x: rect.x, y: rect.y, width: rect.w, height: rect.h },
+  };
+  if (opts.type === 'jpeg') {
+    screenshotOpts.type = 'jpeg';
+    screenshotOpts.quality = opts.quality || 75;
+  }
+  await page.screenshot(screenshotOpts);
+  await page.close();
 }
 
 main().catch(e => {
