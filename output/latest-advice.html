@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI かじマス コーチ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            base:'#0A0F1C', night:'#0F172A', plate:'#131C2E',
+            card:'#172238', card2:'#1E2A44', line:'#28344F', line2:'#334466',
+            ink:'#E6EDF7', muted:'#8FA0BE', dim:'#5F7090',
+            cyan1:'#22D3EE', cyan2:'#67E8F9', cyanbg:'#0E2A35',
+            sky1:'#38BDF8', sky2:'#7DD3FC', skybg:'#0E2539',
+            indi1:'#818CF8', indi2:'#A5B4FC', indibg:'#1A1F3B',
+            teal1:'#5EEAD4', tealbg:'#0D2C2B',
+          },
+          fontFamily: {
+            sans: ['"Noto Sans JP"','"Hiragino Kaku Gothic ProN"','"Yu Gothic"','sans-serif'],
+            mono: ['"JetBrains Mono"','ui-monospace','monospace'],
+          },
+          letterSpacing: { tightish:'-0.01em' }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-base font-sans text-ink antialiased">
+  <main>
+    <div data-capture-root
+         class="mx-auto my-8 w-[1080px] relative overflow-hidden rounded-[40px] shadow-2xl shadow-black/60"
+         style="background:
+           radial-gradient(circle at 20% 20%, rgba(94,234,212,0.12) 0%, transparent 45%),
+           radial-gradient(circle at 80% 80%, rgba(129,140,248,0.10) 0%, transparent 45%),
+           linear-gradient(135deg, #0B1220 0%, #0F172A 55%, #111B33 100%);">
+      <div aria-hidden="true" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal1 via-cyan1 to-indi1"></div>
+      <div aria-hidden="true" class="absolute inset-0 opacity-[0.04]"
+           style="background-image: linear-gradient(to right, #8FA0BE 1px, transparent 1px), linear-gradient(to bottom, #8FA0BE 1px, transparent 1px); background-size: 48px 48px;"></div>
+
+      <div class="relative flex flex-col px-16 pt-10 pb-10">
+
+        <header class="flex items-center justify-between mb-8 pb-6 border-b border-line">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-tealbg border border-teal1/40 flex items-center justify-center">
+              <i aria-hidden="true" data-lucide="sparkles" class="w-6 h-6 text-teal1"></i>
+            </div>
+            <div>
+              <div class="text-xs font-mono font-bold tracking-[0.25em] text-teal1 uppercase">AI Coach</div>
+              <div class="text-xl font-black text-ink">かじマスコーチから</div>
+            </div>
+          </div>
+          <span class="text-sm font-bold text-muted">4月22日 木曜日</span>
+        </header>
+
+        <section class="py-8">
+          <p class="text-3xl font-bold text-ink leading-relaxed tracking-tightish">
+            <span class="font-black text-teal1">洗濯機</span>が999日経過しています。今日優先的に片付けて、次の一週間をスッキリ迎えましょう。
+          </p>
+        </section>
+
+        <footer class="mt-6 flex items-center justify-between pt-6 border-t border-line">
+          <div class="flex items-center gap-5 text-sm">
+            <div class="flex items-baseline gap-1.5">
+              <i aria-hidden="true" data-lucide="check-circle-2" class="w-4 h-4 text-teal1"></i>
+              <span class="text-muted">今週実施</span>
+              <span class="font-mono font-black text-ink text-lg">4</span>
+              <span class="text-muted">件</span>
+            </div>
+            <div class="flex items-baseline gap-1.5">
+              <i aria-hidden="true" data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
+              <span class="text-muted">危険域</span>
+              <span class="font-mono font-black text-lg text-red-400">9</span>
+              <span class="text-muted">件</span>
+            </div>
+          </div>
+          <span class="text-sm font-bold text-muted">まず危険域をひとつ片付ける</span>
+        </footer>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lucide@0.474.0/dist/umd/lucide.min.js"></script>
+  <script>
+    window.__iconsReady = false;
+    lucide.createIcons();
+    window.__iconsReady = true;
+  </script>
+</body>
+</html>
