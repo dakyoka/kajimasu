@@ -2,7 +2,7 @@ name: Morning Chores
 
 on:
   schedule:
-    - cron: '0 22 * * *'  # UTC 22:00 = JST 07:00
+      - cron: '0 21 * * *'  # UTC 21:00 = JST 06:00（遅延込みで朝食前に届く想定）
   workflow_dispatch:       # 手動実行用ボタン
 
 jobs:
