@@ -26,6 +26,7 @@ jobs:
       - name: Render dashboard
         env:
           GAS_API_URL: ${{ secrets.GAS_API_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npm run render
 
       - name: Commit images
