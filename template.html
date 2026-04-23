@@ -114,6 +114,11 @@
                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-{{bg}} border border-{{color}}/40 text-xs font-bold text-{{color}}">
                   {{cycleStatus}}
                 </span>
+                {{#if isDanger}}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-950 border border-red-500 text-xs font-black text-red-400">
+                  <i aria-hidden="true" data-lucide="alert-triangle" class="w-3 h-3"></i> 危険域
+                </span>
+                {{/if}}
               </div>
               <p class="text-base font-medium text-ink/85 leading-relaxed pl-[3.25rem]">{{{reason}}}</p>
             </div>
