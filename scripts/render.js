@@ -125,7 +125,6 @@ function buildView(data, top3, bonus) {
     { color: 'sky1',  bg: 'skybg'  },
     { color: 'indi1', bg: 'indibg' },
   ];
-
   const top3View = top3.map((c, i) => {
     const p = palettes[i];
     return {
@@ -135,13 +134,13 @@ function buildView(data, top3, bonus) {
       bg: p.bg,
       icon: getIcon(c.name),
       lastDaysAgo: c.daysAgo < 999 ? `前回 ${c.daysAgo}日前` : '初回',
-      cycleText: `推奨 ${c.cycleDays || '?'}日サイクル`,
+      cycleText: c.weeklyFreq ? `週${formatFreq(c.weeklyFreq)}回目安` : `推奨 ${c.cycleDays || '?'}日サイクル`,
       cycleStatus: buildCycleStatus(c),
       reason: buildReason(c, p.color),
       minutes: c.minutes || 0,
     };
   });
-
+  
   const heroChips = top3.map((c, i) => ({
     name: shortenName(c.name),
     color: palettes[i].color,
@@ -174,19 +173,27 @@ function buildCycleStatus(chore) {
 }
 
 function buildReason(chore, color) {
+  const freqDisplay = chore.weeklyFreq
+    ? `週${formatFreq(chore.weeklyFreq)}回`
+    : `${chore.cycleDays}日サイクル`;
+
   if (chore.daysAgo >= 999) {
-    return `まだ記録がありません。推奨サイクルは<span class="font-bold text-${color}">${chore.cycleDays || '?'}日</span>、この機会にスタート。`;
+    return `まだ記録がありません。${freqDisplay}のペースでスタート。`;
   }
   if (chore.overDays > 0) {
-    return `前回から${chore.daysAgo}日経過、推奨${chore.cycleDays}日サイクルを<span class="font-bold text-${color}">${chore.overDays}日超過</span>。今日が動き時。`;
+    return `前回から${chore.daysAgo}日経過、${freqDisplay}のペースを<span class="font-bold text-${color}">${chore.overDays}日超過</span>。今日が動き時。`;
   }
   if (chore.overDays === 0) {
-    return `<span class="font-bold text-${color}">推奨${chore.cycleDays}日サイクルちょうど</span>。今日やると次の${chore.cycleDays}日間、気が楽に。`;
+    return `<span class="font-bold text-${color}">${freqDisplay}のペースちょうど</span>。今日やると次のサイクルまで気が楽に。`;
   }
   if (chore.overDays === -1) {
-    return `<span class="font-bold text-${color}">明日が期限</span>。先取りで今日やれば、明日以降に余裕が生まれる。`;
+    return `<span class="font-bold text-${color}">明日が目安</span>。先取りで今日やれば、明日以降に余裕が生まれる。`;
   }
-  return `前回から${chore.daysAgo}日経過。<span class="font-bold text-${color}">${chore.minutes}分で済む</span>ので、手が空いた時に。`;
+  return `前回から${chore.daysAgo}日。<span class="font-bold text-${color}">${chore.minutes}分で済む</span>ので、手が空いた時に。`;
+}
+
+function formatFreq(freq) {
+  return Number.isInteger(freq) ? String(freq) : freq.toFixed(1);
 }
 
 function shortenName(name) {
